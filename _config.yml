@@ -1,0 +1,16 @@
+title: 'sixf0ur.github.io'
+description: "A jekyll theme."
+
+url: "https://sixf0ur.com"
+
+header_pages:
+  - index.md
+
+
+style: hacker
+
+footer: '<a href="https://github.com/sixf0ur">Github</a> <a href="https://huggingface.co/sixf0ur">Huggingface</a> <a href="https://linkedin.com/in/david-stegh">LinkedIn</a>'
+
+# Build settings
+markdown: kramdown
+theme: jekyll-theme-console
