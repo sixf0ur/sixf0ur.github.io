@@ -13,4 +13,5 @@ footer: '<a href="https://github.com/sixf0ur">Github</a> <a href="https://huggin
 
 # Build settings
 markdown: kramdown
-theme: jekyll-theme-console
+#theme: jekyll-theme-console
+remote_theme: b2a3e8/jekyll-theme-console
