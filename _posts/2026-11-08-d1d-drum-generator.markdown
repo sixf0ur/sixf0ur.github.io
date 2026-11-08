@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "D1D: generating drum one-shots on the CPU in 0.3 seconds"
-date:   2026-11-08 18:00:00 +0100
+date:   2026-11-08 10:00:00 +0100
 categories:
 ---
 
