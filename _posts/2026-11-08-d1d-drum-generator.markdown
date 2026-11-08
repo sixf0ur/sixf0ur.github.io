@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "D1D: generating drum one-shots on the CPU in 0.3 seconds"
-date:   2026-11-08 10:00:00 +0100
+date:   2026-11-08 12:00:00 +0100
 categories:
 ---
 
@@ -18,9 +18,8 @@ on an ordinary CPU, with no GPU and no cloud.
 
 *Kick, snare, hat: straight out of D1D-Turbo, no post-processing.*
 
-**[→ Try it in the browser]({{ "/d1d/" | relative_url }})** (access-restricted for now)
-· Models on Hugging Face: [D1D](https://huggingface.co/sixf0ur/D1D),
-[D1D-Turbo](https://huggingface.co/sixf0ur/D1D-Turbo)
+**[→ Try it in the browser]({{ "/d1d/" | relative_url }})** (runs locally, nothing is uploaded)
+· Model on Hugging Face: [D1D-Turbo](https://huggingface.co/sixf0ur/D1D-Turbo)
 
 ## What I built
 
@@ -30,8 +29,8 @@ on an ordinary CPU, with no GPU and no cloud.
 | time per sound, 6-core CPU | ~12 s | **~0.35 s** |
 | silence before/after the hit | faint noise floor | exact digital silence |
 
-D1D-Turbo is the one you actually use; D1D is the full-quality "teacher" it was
-distilled from. Both run in three ways, none of which needs PyTorch:
+D1D-Turbo is the released model; D1D is the full-quality "teacher" it was
+distilled from. D1D-Turbo runs in three ways, none of which needs PyTorch:
 
 - **Python** with ONNX Runtime;
 - **C++**, as a single header-only library (`d1d.hpp`, standard library only, no

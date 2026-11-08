@@ -64,7 +64,10 @@
   }
   .ghost:hover { color: var(--text); border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.03); }
 
-  /* ---------- password gate ---------- */
+  /* ---------- loading screen ---------- */
+  .gate-bar { height: 6px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line-2); overflow: hidden; margin-bottom: 4px; }
+  .gate-bar i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--kick), var(--snare), var(--hat)); transition: width .2s; }
+  .gate-card .primary[hidden] { display: none; }
   body.locked .wrap, body.locked .player { display: none; }
   .gate { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px; }
   .gate-card {
@@ -232,15 +235,10 @@
   <form class="gate-card" id="gateForm">
     <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#0a0b0f" stroke-width="2.4" stroke-linecap="round"><path d="M3 12h2M7 7v10M11 3v18M15 8v8M19 10v4M22 12h0"/></svg></div>
     <h2>D1D <span>Drum Generator</span></h2>
-    <p>Enter the password to unlock the model.</p>
-    <div class="pw">
-      <input type="password" id="gatePw" placeholder="Password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Password" autofocus>
-      <button type="button" class="eye" id="gateEye" aria-label="Show password">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-      </button>
-    </div>
-    <button class="primary" id="gateBtn" type="submit">Unlock</button>
-    <div class="gate-msg" id="gateMsg"></div>
+    <p>Runs entirely in your browser. The model (19.5 MB) is downloaded once.</p>
+    <div class="gate-bar" aria-hidden="true"><i id="gateBar"></i></div>
+    <button class="primary" id="gateBtn" type="submit" hidden>Retry</button>
+    <div class="gate-msg" id="gateMsg" aria-live="polite"></div>
     <div class="gate-err" id="gateErr" role="alert"></div>
     <button type="button" class="linkbtn" id="gateLocal">Load a local model.bin instead</button>
   </form>
@@ -899,55 +897,38 @@
     worker.onerror = (e) => { toast('Worker error: ' + (e.message || 'unknown')); setBusy(null); };
   }
 
-  // ---------------------------------------------------------------- model loading (encrypted)
-  // model.enc = "D1DE" | ver u8 | iterations u32 LE | salt[16] | iv[12] | AES-256-GCM(ciphertext || tag)
-  // key = PBKDF2-SHA256(password, salt, iterations). The header is authenticated (GCM additional data).
-  const gateEl = { form: $('gateForm'), pw: $('gatePw'), btn: $('gateBtn'), msg: $('gateMsg'), err: $('gateErr') };
-  let gateBusy = false, encP = null, dl = null;
+  // ---------------------------------------------------------------- model loading
+  // model.bin (D1D-Turbo, the same file as on Hugging Face) next to this page.
+  const MODEL_URL = 'model.bin';
+  const gateEl = { form: $('gateForm'), btn: $('gateBtn'), msg: $('gateMsg'), err: $('gateErr'), bar: $('gateBar') };
+  let gateBusy = false;
 
   function gateStatus(t) { gateEl.msg.textContent = t || ''; }
   function gateError(t) {
     gateEl.err.textContent = t || '';
     if (t) { gateEl.form.classList.remove('shake'); void gateEl.form.offsetWidth; gateEl.form.classList.add('shake'); }
   }
-  function gateIdle() { gateBusy = false; gateEl.btn.disabled = false; }
+  function gateIdle() { gateBusy = false; gateEl.btn.disabled = false; gateEl.btn.hidden = false; }
+  function gateProgress(f) { gateEl.bar.style.width = Math.round(Math.max(0, Math.min(1, f)) * 100) + '%'; }
 
-  function fetchEnc() {
-    return (encP = (async () => {
-      const r = await fetch('model.enc', { cache: 'no-cache' });
-      if (!r.ok) throw new Error('model.enc not found (HTTP ' + r.status + ')');
-      const total = +r.headers.get('content-length') || 0;
-      const reader = r.body.getReader(), chunks = [];
-      let got = 0;
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value); got += value.length;
-        dl = { got, total };
-        if (gateBusy && !gateEl.btn.dataset.stage) gateStatus('Downloading model … ' + (total ? Math.round(got / total * 100) + ' %' : (got / 1048576).toFixed(1) + ' MB'));
-      }
-      const out = new Uint8Array(got);
-      let o = 0;
-      for (const c of chunks) { out.set(c, o); o += c.length; }
-      return out;
-    })());
-  }
-
-  async function decryptModel(enc, password) {
-    if (!(window.crypto && crypto.subtle)) throw new Error('Decryption needs a secure context (https:// or localhost).');
-    const HEAD = 37;
-    if (enc.length < HEAD + 16 || String.fromCharCode(enc[0], enc[1], enc[2], enc[3]) !== 'D1DE')
-      throw new Error('model.enc is not a valid encrypted model.');
-    const dv = new DataView(enc.buffer, enc.byteOffset, enc.byteLength);
-    const iter = dv.getUint32(5, true);
-    if (enc[4] !== 1 || iter < 1000 || iter > 10000000) throw new Error('Unsupported model.enc version.');
-    const header = enc.subarray(0, HEAD), salt = enc.subarray(9, 25), iv = enc.subarray(25, HEAD), ct = enc.subarray(HEAD);
-    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password.normalize('NFC')), 'PBKDF2', false, ['deriveKey']);
-    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base,
-      { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-    try {
-      return await crypto.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: header }, key, ct);
-    } catch (e) { throw new Error('Wrong password.'); }
+  async function fetchModel() {
+    const r = await fetch(MODEL_URL);
+    if (!r.ok) throw new Error('model.bin not found (HTTP ' + r.status + ')');
+    const total = +r.headers.get('content-length') || 19501795;
+    if (!r.body) { gateProgress(1); return await r.arrayBuffer(); }
+    const reader = r.body.getReader(), chunks = [];
+    let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value); got += value.length;
+      gateProgress(got / total);
+      gateStatus('Downloading model … ' + Math.min(100, Math.round(got / total * 100)) + ' %');
+    }
+    const out = new Uint8Array(got);
+    let o = 0;
+    for (const c of chunks) { out.set(c, o); o += c.length; }
+    return out.buffer;
   }
 
   function loadModel(buf) {
@@ -957,40 +938,29 @@
     worker.postMessage({ type: 'load', buf: buf.slice(0) });
   }
 
-  async function loadFile(file) {   // local fallback (no password): a plain model.bin from disk
+  async function loadFile(file) {   // local fallback: a model.bin from disk
     try {
       gateBusy = true; gateEl.btn.disabled = true; gateError(''); gateStatus('Reading file …');
       loadModel(await file.arrayBuffer());
     } catch (e) { gateIdle(); gateStatus(''); gateError('Could not read the file.'); }
   }
 
-  gateEl.form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  async function start() {
     if (gateBusy) return;
-    const pw = gateEl.pw.value;
-    if (!pw) { gateError('Enter the password.'); return; }
-    gateBusy = true; gateEl.btn.disabled = true; gateError('');
-    delete gateEl.btn.dataset.stage;
+    gateBusy = true; gateEl.btn.disabled = true; gateEl.btn.hidden = true; gateError('');
+    gateProgress(0);
     try {
       gateStatus('Downloading model …');
-      let enc;
-      try { enc = await (encP || fetchEnc()); } catch (err) { encP = null; throw new Error(err.message === 'Failed to fetch' ? 'Could not download model.enc.' : err.message); }
-      gateEl.btn.dataset.stage = 'x';
-      gateStatus('Unlocking …');
-      const buf = await decryptModel(enc, pw);
+      let buf;
+      try { buf = await fetchModel(); } catch (err) { throw new Error(err.message === 'Failed to fetch' ? 'Could not download the model.' : err.message); }
       gateStatus('Starting …');
-      gateEl.pw.value = '';
       loadModel(buf);
     } catch (err) {
-      gateStatus(''); gateError(err.message); gateIdle(); gateEl.pw.focus(); gateEl.pw.select();
+      gateStatus(''); gateError(err.message); gateIdle();
     }
-  });
+  }
 
-  $('gateEye').onclick = () => {
-    const show = gateEl.pw.type === 'password';
-    gateEl.pw.type = show ? 'text' : 'password';
-    $('gateEye').setAttribute('aria-label', show ? 'Hide password' : 'Show password');
-  };
+  gateEl.form.addEventListener('submit', (e) => { e.preventDefault(); start(); });
 
   function setChip(state, text) { $('dot').className = 'dot ' + state; $('chipText').innerHTML = text; }
 
@@ -1246,9 +1216,9 @@
   let toastT = 0;
   function toast(msg, info) { const t = $('toast'); t.textContent = msg; t.classList.toggle('info', !!info); t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 4500); }
 
-  // ---------------------------------------------------------------- startup: prefetch model.enc while the user types
-  if (location.protocol !== 'file:') fetchEnc().catch(() => {});
-  else gateStatus('Opened from disk: serve the folder over http, or use the local file option below.');
+  // ---------------------------------------------------------------- startup: download the model right away
+  if (location.protocol !== 'file:') start();
+  else { gateStatus('Opened from disk: serve the folder over http, or use the local file option below.'); gateEl.btn.hidden = true; }
 })();
 </script>
 </body>
