@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="{{ site.lang | default: 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {%- if page.title and page.url != '/' %}
+  {%- assign page_title = page.title | append: ' · ' | append: site.title %}
+  {%- else %}
+  {%- assign page_title = site.title %}
+  {%- endif %}
+  {%- assign page_desc = page.description | default: site.description | strip_html | strip_newlines %}
+  <title>{{ page_title }}</title>
+  <meta name="description" content="{{ page_desc }}">
+  <link rel="canonical" href="{{ page.url | absolute_url }}">
+  <meta property="og:site_name" content="{{ site.title }}">
+  <meta property="og:title" content="{{ page.title | default: site.title }}">
+  <meta property="og:description" content="{{ page_desc }}">
+  <meta property="og:url" content="{{ page.url | absolute_url }}">
+  <meta property="og:type" content="{% if page.layout == 'post' %}article{% else %}website{% endif %}">
+  {%- if page.image %}
+  <meta property="og:image" content="{{ page.image | absolute_url }}">
+  <meta name="twitter:card" content="summary_large_image">
+  {%- endif %}
+  <meta name="theme-color" content="#1e293b">
+  <link rel="alternate" type="application/atom+xml" title="{{ site.title }}" href="{{ '/feed.xml' | relative_url }}">
+  <script>
+    // set the theme before the first paint: saved choice, else the system setting
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="site-title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="{{ '/' | relative_url }}#posts">Posts</a>
+        {%- for link in site.nav_links %}
+        <a href="{{ link.url }}"{% if link.url contains '://' %} rel="me noopener"{% endif %}>{{ link.title }}</a>
+        {%- endfor %}
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {{ content }}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <span>&copy; {{ site.time | date: '%Y' }} {{ site.author | default: site.title }}</span>
+      <span class="footer-links">{{ site.footer }}</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('themeToggle').addEventListener('click', function () {
+      var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+      try { localStorage.setItem('theme', t); } catch (e) {}
+    });
+  </script>
+</body>
+</html>

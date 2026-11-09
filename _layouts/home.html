@@ -1,0 +1,31 @@
+---
+layout: default
+---
+<section class="intro prose">
+  {{ content }}
+</section>
+
+<section class="posts" id="posts">
+  <h2 class="section-title">Recent</h2>
+  {%- for post in site.posts %}
+  <article class="post-card{% if post.image %} has-image{% endif %}">
+    {%- if post.image %}
+    <a class="thumb" href="{{ post.url | relative_url }}" tabindex="-1" aria-hidden="true">
+      <img src="{{ post.image | relative_url }}" alt="" loading="lazy">
+    </a>
+    {%- endif %}
+    <div class="card-body">
+      <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+      {% include post-meta.html post=post %}
+      {%- if post.description %}
+      <p class="summary">{{ post.description }}</p>
+      {%- else %}
+      {%- assign body = post.content | strip -%}
+      {%- assign head = body | slice: 0, 3 -%}
+      {%- if head == '<h1' %}{% assign body = body | split: '</h1>' | shift | join: '</h1>' %}{% endif -%}
+      <p class="summary">{{ body | strip_html | normalize_whitespace | truncatewords: 32 }}</p>
+      {%- endif %}
+    </div>
+  </article>
+  {%- endfor %}
+</section>

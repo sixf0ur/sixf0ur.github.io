@@ -1,0 +1,54 @@
+---
+layout: default
+---
+<article class="post">
+  <header class="post-header">
+    <h1 class="post-title">{{ page.title }}</h1>
+    {% include post-meta.html post=page %}
+  </header>
+
+  <div class="post-body">
+    <div class="prose" id="prose">
+      {{ content }}
+    </div>
+    <aside class="toc" id="toc" hidden aria-label="Contents">
+      <nav><ul id="tocList"></ul></nav>
+    </aside>
+  </div>
+
+  <nav class="post-nav" aria-label="More posts">
+    {%- if page.previous %}
+    <a class="prev" href="{{ page.previous.url | relative_url }}"><span>← Older</span>{{ page.previous.title }}</a>
+    {%- else %}<span></span>{% endif %}
+    {%- if page.next %}
+    <a class="next" href="{{ page.next.url | relative_url }}"><span>Newer →</span>{{ page.next.title }}</a>
+    {%- endif %}
+  </nav>
+</article>
+
+<script>
+  // Table of contents from the post's h2/h3 (kramdown gives them ids); highlights the
+  // section in view. Shown only on wide screens and only if there are 3+ headings.
+  (function () {
+    var prose = document.getElementById('prose');
+    var hs = [].slice.call(prose.querySelectorAll('h2[id], h3[id]'));
+    if (hs.length < 3) return;
+    var list = document.getElementById('tocList'), links = {};
+    hs.forEach(function (h) {
+      var li = document.createElement('li'), a = document.createElement('a');
+      li.className = h.tagName === 'H3' ? 'sub' : '';
+      a.href = '#' + h.id; a.textContent = h.textContent;
+      li.appendChild(a); list.appendChild(li); links[h.id] = a;
+    });
+    document.getElementById('toc').hidden = false;
+    var current = null;
+    function update() {
+      var y = window.scrollY + 120, id = hs[0].id;
+      for (var i = 0; i < hs.length; i++) { if (hs[i].offsetTop <= y) id = hs[i].id; else break; }
+      if (id === current) return;
+      if (current) links[current].classList.remove('active');
+      links[id].classList.add('active'); current = id;
+    }
+    window.addEventListener('scroll', update, { passive: true }); update();
+  })();
+</script>

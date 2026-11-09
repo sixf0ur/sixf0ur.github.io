@@ -3,6 +3,9 @@ layout: post
 title:  "D1D: generating drum one-shots on the CPU in 0.3 seconds"
 date:   2026-11-08 12:00:00 +0100
 categories:
+tags: [ML & Audio, Generative AI, C++]
+description: "A 4.9 M-parameter model that turns noise into kick, snare and hi-hat one-shots in 3 steps, on a plain CPU or in the browser."
+image: /assets/d1d/cover.jpg
 ---
 
 # D1D: generating drum one-shots on the CPU in 0.3 seconds
