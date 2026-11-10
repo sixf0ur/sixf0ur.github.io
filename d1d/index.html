@@ -80,6 +80,7 @@
   .gate-card h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: .02em; }
   .gate-card h2 span { color: var(--muted); font-weight: 500; }
   .gate-card p { margin: 0 0 22px; color: var(--muted); font-size: 14px; }
+  .gate-card p a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
   .pw { position: relative; margin-bottom: 12px; }
   .pw input {
     width: 100%; background: var(--bg); border: 1px solid var(--line-2); color: var(--text);
@@ -235,7 +236,9 @@
   <form class="gate-card" id="gateForm">
     <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#0a0b0f" stroke-width="2.4" stroke-linecap="round"><path d="M3 12h2M7 7v10M11 3v18M15 8v8M19 10v4M22 12h0"/></svg></div>
     <h2>D1D <span>Drum Generator</span></h2>
-    <p>Runs entirely in your browser. The model (19.5 MB) is downloaded once.</p>
+    <p>Runs entirely in your browser. The model (19.5 MB) is downloaded once from
+      <a href="https://huggingface.co/sixf0ur/D1D-Turbo">Hugging Face</a>.<br>
+      Model license: <a href="https://huggingface.co/sixf0ur/D1D-Turbo/blob/main/License.txt">CC BY-NC 4.0</a> (non-commercial).</p>
     <div class="gate-bar" aria-hidden="true"><i id="gateBar"></i></div>
     <button class="primary" id="gateBtn" type="submit" hidden>Retry</button>
     <div class="gate-msg" id="gateMsg" aria-live="polite"></div>
@@ -898,8 +901,10 @@
   }
 
   // ---------------------------------------------------------------- model loading
-  // model.bin (D1D-Turbo, the same file as on Hugging Face) next to this page.
-  const MODEL_URL = 'model.bin';
+  // model.bin is loaded from the Hugging Face Hub (licensed CC BY-NC 4.0, separately
+  // from this site's code). Pinned to a commit so a later upload can't silently
+  // break the parser; bump the hash when publishing a new model version.
+  const MODEL_URL = 'https://huggingface.co/sixf0ur/D1D-Turbo/resolve/71192682bafdaaa249c76a622f1729abef2a7eea/model.bin';
   const gateEl = { form: $('gateForm'), btn: $('gateBtn'), msg: $('gateMsg'), err: $('gateErr'), bar: $('gateBar') };
   let gateBusy = false;
 

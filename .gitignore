@@ -1,0 +1,2 @@
+# local copy of the D1D model for offline testing (loaded from Hugging Face on the live site)
+d1d/model.bin
