@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="{{ '/assets/savegames/carve.css' | relative_url }}">
+<figure class="carve" id="carve" aria-label="Interactive illustration of carving savegames out of a raw image">
+<div class="carve-steps" role="group" aria-label="Steps">
+<button type="button" data-step="0" aria-pressed="true"><b>1</b> Raw image</button>
+<button type="button" data-step="1" aria-pressed="false"><b>2</b> Find pattern</button>
+<button type="button" data-step="2" aria-pressed="false"><b>3</b> + 524,280 bytes</button>
+<button type="button" data-step="3" aria-pressed="false"><b>4</b> Carve files</button>
+</div>
+<p class="carve-say" id="carveSay" aria-live="polite"></p>
+<div class="carve-label"><span>Whole image</span><span id="carveScale"></span></div>
+<div class="cmap" id="carveMap" aria-hidden="true"></div>
+<div class="carve-legend">
+<span><i class="sw sw-raw"></i>unknown bytes</span>
+<span><i class="sw sw-match"></i>pattern match</span>
+<span><i class="sw sw-save"></i>savegame</span>
+<span><i class="sw sw-trunc"></i>runs past the end</span>
+</div>
+<div class="carve-label"><span>Zoom into hit 1</span><span>16 bytes per row</span></div>
+<div class="hx" id="carveHex" aria-hidden="true"></div>
+<div class="hx-note" id="carveNote">
+<span class="n-p">pattern: 8 bytes</span>
+<span class="n-op">+</span>
+<span class="n-s">tail: 524,280 bytes</span>
+<span class="n-op">=</span>
+<span class="n-t">524,288 bytes (512 KB)</span>
+</div>
+<ul class="carve-files" id="carveFiles"></ul>
+<figcaption>Illustration: the layout, offsets and bytes around the pattern are made up. The pattern and the sizes are the real ones.</figcaption>
+</figure>
+<script src="{{ '/assets/savegames/carve.js' | relative_url }}" defer></script>
