@@ -117,12 +117,10 @@ Once the offsets are known, extracting is a slice per hit:
 ```python
 from pathlib import Path
 
-SAVE_SIZE = 512 * 1024   # 524,288 bytes
-
-def carve(image_path, pattern_hex, out_dir="extracted_savegames"):
+def carve(image_path, pattern_hex, save_size=512 * 1024, out_dir="extracted_savegames"):
     pattern = bytes.fromhex(pattern_hex.replace(" ", ""))
     data = Path(image_path).read_bytes()
-    after = SAVE_SIZE - len(pattern)          # 524,280 for an 8-byte pattern
+    after = save_size - len(pattern)          # 524,280 for an 8-byte pattern
 
     Path(out_dir).mkdir(exist_ok=True)
     for i, off in enumerate(find_offsets(data, pattern), 1):
@@ -147,11 +145,44 @@ map a carved save back to its position in the image.
 524,288 bytes after it. Every file came out at 524,296 bytes, eight too many,
 and a save that is not exactly 512 KB is not something you want to hand to an
 emulator or a flashcart. The fix is the `after` line above: take
-`SAVE_SIZE - len(pattern)` bytes after the pattern, so pattern plus tail is
+`save_size - len(pattern)` bytes after the pattern, so pattern plus tail is
 exactly 524,288. That is the "+ 524,280 bytes" step in the figure.
 
 A hit too close to the end of the image can't hold a full save. Those are
 reported and skipped instead of being written out as a short file.
+
+## The other games
+
+NSMB was not the only game on the card, and for the others I didn't even have
+an 8-byte leftover. So I made my own reference files: for each game I started a
+new savegame and took the fresh `.sav` it produced.
+
+A brand-new save has no progress in it, which is exactly what makes it useful
+here. The bytes that every save of that game starts with are already there, and
+there is little else to confuse them with. So the steps were the same as for
+NSMB:
+
+1. Hex dump the start of the fresh save.
+2. Pick a distinctive run of bytes from it as the header signature.
+3. Search the image for that signature and carve every hit.
+
+```python
+fresh = Path("fresh_saves/other_game.sav").read_bytes()
+hexdump(fresh[:32])
+
+carve("card.bin", "<signature from the dump>", save_size=len(fresh))
+```
+
+The one thing that changes from game to game is the size. DS cartridges use
+different save chips, so a save can be anything from a few kilobytes to 512 KB
+and more. The fresh save already has the right size for its game, so its file
+length is the `save_size` to carve with.
+
+Two things to watch out for when picking the signature: it should only contain
+bytes that are the same in every save of that game (no player names, no
+counters), and it should not be filler. If a save starts with a run of `0xFF`,
+those bytes match every erased area in the image, and the real signature sits
+further in.
 
 ## Checking the results
 
@@ -171,7 +202,8 @@ A hit is a candidate, not a guaranteed save. What I looked at:
 
 A lost file table is not the same as lost data. As long as you know what the
 start of a file looks like and how long it is, you can pull it out of a raw
-image without understanding anything else about the disk. In my case all the
-knowledge I needed was in a broken 8-byte file.
+image without understanding anything else about the disk. For NSMB, all the
+knowledge I needed was in a broken 8-byte file. For every other game, a fresh
+savegame was enough.
 
 And: back up your saves somewhere that is not the card they live on.
